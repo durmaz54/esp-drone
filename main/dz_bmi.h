@@ -5,6 +5,8 @@
 #include "esp_log.h"
 #include "math.h"
 
+
+
 #define rad_to_deg(a) ((double)a/(double)M_PI*(double)180)
 
 
@@ -65,6 +67,6 @@ esp_err_t dz_bmi_init();
 
 esp_err_t dz_bmi_read(struct bmi_dev *devx);
 
-esp_err_t dz_bmi_read_euler(struct bmi_euler *euler);
+esp_err_t dz_bmi_read_euler(struct bmi_euler *euler, uint32_t deltaTime);
 
 #endif

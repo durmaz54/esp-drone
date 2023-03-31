@@ -1,8 +1,6 @@
 #include "dz_bmi.h"
 
-uint32_t nowTime, deltaTime;
 struct bmi_dev dev;
-double deneme=0;
 
 static void bmi_delay()
 {
@@ -300,15 +298,13 @@ esp_err_t dz_bmi_read(struct bmi_dev *devx)
     return ESP_OK;
 }
 
-esp_err_t dz_bmi_read_euler(struct bmi_euler *euler)
+esp_err_t dz_bmi_read_euler(struct bmi_euler *euler, uint32_t deltaTime)
 {
     if (dz_bmi_read(&dev) != ESP_OK)
     {
         return ESP_FAIL;
     }
 
-    nowTime = esp_log_timestamp();
-    deltaTime = nowTime - deltaTime;
     //roll = x
     double gyro_roll= (double)dev.gyrox / 32.8;
     double gyro_pitch  = (double)dev.gyroy / 32.8;
@@ -323,10 +319,6 @@ esp_err_t dz_bmi_read_euler(struct bmi_euler *euler)
     double accy = (double)dev.accy / 16384.00;
     double accz = (double)dev.accz / 16384.00;
 
-    deneme += gyro_pitch * dt;
-    
-
-    ESP_LOGW("roll", "%d", (int16_t)deneme);
 
     double omega_roll = atan2(accy,accz);
     double omega_pitch = atan2(-accx, sqrt(accy*accy + accz*accz));
@@ -339,6 +331,5 @@ esp_err_t dz_bmi_read_euler(struct bmi_euler *euler)
     euler->roll = 0.93 * (euler->roll + gyro_roll*dt) + (rad_to_deg(omega_roll) * 0.07);
     euler->pitch = 0.93 * (euler->pitch + gyro_pitch*dt) + (rad_to_deg(omega_pitch) * 0.07);
 
-    deltaTime = nowTime;
     return ESP_OK;
 }

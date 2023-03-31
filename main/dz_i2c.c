@@ -8,7 +8,7 @@ esp_err_t dz_i2c_init()
         .sda_pullup_en = GPIO_PULLUP_ENABLE,
         .scl_io_num = 26,
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = 400000,
+        .master.clk_speed = 1000000,
         // .clk_flags = 0,          /*!< Optional, you can use I2C_SCLK_SRC_FLAG_* flags to choose i2c source clock here. */
     };
 
@@ -33,7 +33,7 @@ esp_err_t dz_i2c_read_reg(uint8_t reg_addr, uint8_t *reg_val, uint32_t len)
     // Start condition
     i2c_master_start(cmd);
     i2c_master_write_byte(cmd, (SLAVE_ADDR << 1) | WRITE_BIT, ACK_CHECK_EN);
-    i2c_master_write_byte(cmd, (reg_addr & 0xFF), ACK_CHECK_EN);
+    i2c_master_write_byte(cmd, (reg_addr), ACK_CHECK_EN);
 
     // Restart (stop + start)
     i2c_master_start(cmd);
@@ -43,17 +43,12 @@ esp_err_t dz_i2c_read_reg(uint8_t reg_addr, uint8_t *reg_val, uint32_t len)
 
     // ACK_VAL olduğunda sonraki okuma adımlarını devam ettiriyor.
     // NACK_VAL olduğunda okuma işlemini tamamlıyor.
-    for (int32_t i = 0; i < len; i++)
+    if(len > 1)
     {
-        if (i == len - 1)
-        {
-            i2c_master_read_byte(cmd, &reg_val[i], NACK_VAL);
-            break;
-        }
-        i2c_master_read_byte(cmd, &reg_val[i], ACK_VAL);
+		i2c_master_read(cmd, reg_val, len - 1, I2C_MASTER_ACK);
     }
-
-    i2c_master_stop(cmd);
+    	i2c_master_read_byte(cmd, reg_val + len - 1, I2C_MASTER_NACK);
+	i2c_master_stop(cmd);
 
     if (i2c_master_cmd_begin(I2C_NUM, cmd, I2C_DELAY) != ESP_OK)
     {
@@ -78,8 +73,8 @@ esp_err_t dz_i2c_write_reg(uint8_t reg_addr, uint8_t *reg_val, uint32_t len)
 
         i2c_master_start(cmd);
         i2c_master_write_byte(cmd, (SLAVE_ADDR << 1) | WRITE_BIT, ACK_CHECK_EN);
-        i2c_master_write_byte(cmd, reg_addr + i, ACK_CHECK_EN);
-        i2c_master_write_byte(cmd, reg_val[i], ACK_CHECK_EN);
+        i2c_master_write_byte(cmd, reg_addr, ACK_CHECK_EN);
+        i2c_master_write(cmd, reg_val,len, ACK_CHECK_EN);
         i2c_master_stop(cmd);
 
         if (i2c_master_cmd_begin(I2C_NUM, cmd, I2C_DELAY) != ESP_OK)
