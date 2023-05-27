@@ -3,12 +3,16 @@
 
 #include "dz_i2c.h"
 #include "esp_log.h"
-#include "math.h"
+
+#include "madgwickFilter.h"
+#include "qua/quaternion.h"
+#include "qua/sensor_processing_lib.h"
+#include "qua/vector_3d.h"
 
 
 
 #define rad_to_deg(a) ((double)a/(double)M_PI*(double)180)
-
+#define deg_to_rad(a) ((double)a*(double)M_PI/(double)180)
 
 #define BMI160_ADDR_CHIPID 0x00
 #define BMI160_VALUE_CHIPID 0xD1
@@ -60,7 +64,7 @@ struct bmi_dev{
 };
 
 struct bmi_euler{
-    double pitch,yaw,roll;
+    float pitch,yaw,roll;
 };
 
 esp_err_t dz_bmi_init();

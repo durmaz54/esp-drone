@@ -28,7 +28,10 @@
         "dz_i2c.h": "c",
         "dz_bmi.h": "c",
         "*.tcc": "c",
-        "ratio": "c"
+        "ratio": "c",
+        "quaternion.h": "c",
+        "vector_3d.h": "c",
+        "madgwickfilter.h": "c"
     },
     "idf.port": "/dev/ttyUSB0",
     "idf.adapterTargetName": "esp32",
@@ -38,4 +41,5 @@
     ],
     "idf.flashType": "UART",
     "C_Cpp.intelliSenseEngine": "default",
+    "C_Cpp.errorSquiggles": "disabled",
 }

@@ -26,11 +26,7 @@ void app_main(void)
         dtime = time - dtime;
         if(dtime >= 1){
         dz_bmi_read_euler(&euler, dtime);
-        ESP_LOGI("EULER", "roll: %f pitch: %f yaw: %f", euler.roll, euler.pitch, euler.yaw);
-        ESP_LOGI("time", "%d", (int16_t)dtime);
+        ESP_LOGI("EULER", "%.2f ",euler.pitch);
         }
         }
-        
-
-    
 }

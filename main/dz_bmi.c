@@ -1,6 +1,9 @@
 #include "dz_bmi.h"
 
 struct bmi_dev dev;
+euler_angles angles;
+vector_ijk fused_vector;
+Quaternion q_acc;
 
 static void bmi_delay()
 {
@@ -67,7 +70,7 @@ static esp_err_t bmi_setAccGyro()
     }
     bmi_delay();
 
-    reg = 0b00000011; // +-2g range
+    reg = 0b00000101; // +-4g range
     if (dz_i2c_write_reg(BMI160_ADDR_ACC_RANGE, &reg, 1) != ESP_OK)
     {
         ESP_LOGW("I2C", "write ERROR");
@@ -118,7 +121,6 @@ static esp_err_t bmi_setAccOffsetZero()
         return ESP_FAIL;
     }
     bmi_delay();
-
 
     return ESP_OK;
 }
@@ -259,6 +261,9 @@ esp_err_t dz_bmi_init()
     bmi_setFOC();
     bmi_getOffset();
 
+    fused_vector = vector_3d_initialize(0.0, 0.0, -1.0);
+    q_acc = quaternion_initialize(1.0, 0.0, 0.0, 0.0);
+
     ESP_LOGI("BMI", "init success");
     return ESP_OK;
 }
@@ -304,32 +309,59 @@ esp_err_t dz_bmi_read_euler(struct bmi_euler *euler, uint32_t deltaTime)
     {
         return ESP_FAIL;
     }
+    float dt = deltaTime / 1000.00;
 
+    float wx = 0.0005323 * dev.gyrox;
+    float wy = 0.0005323 * dev.gyroy;
+    float wz = 0.0005323 * dev.gyroz;
+
+    fused_vector = update_fused_vector(fused_vector,dev.accx,dev.accy,dev.accz,wx,wy,wz,dt);
+  
+    q_acc = quaternion_from_accelerometer(fused_vector.a,fused_vector.b,fused_vector.c);
+    angles = quaternion_to_euler_angles(q_acc);
+
+    euler->roll = angles.roll;
+    euler->pitch = angles.pitch;
+    euler->yaw = angles.yaw;
+
+
+    /*
     //roll = x
     double gyro_roll= (double)dev.gyrox / 32.8;
     double gyro_pitch  = (double)dev.gyroy / 32.8;
     double gyro_yaw= (double)dev.gyroz / 32.8;
     double dt = (double)deltaTime / 1000.00;
-    /*
-    euler->roll += gyro_roll * dt;
-    euler->pitch += gyro_pitch * dt;
-    euler->yaw += gyro_yaw * dt;*/
-    
-    double accx = (double)dev.accx / 16384.00;
-    double accy = (double)dev.accy / 16384.00;
-    double accz = (double)dev.accz / 16384.00;
 
+    double acc_x = (double)dev.accx / (double)16384;
+    double acc_y = (double)dev.accy / (double)16384;
+    double acc_z = (double)dev.accz / (double)16384;
 
-    double omega_roll = atan2(accy,accz);
-    double omega_pitch = atan2(-accx, sqrt(accy*accy + accz*accz));
-    //ESP_LOGW("accl","x= %d, y= %d, z=%d", (int16_t)rad_to_deg(omega_roll), (int16_t)rad_to_deg(omega_pitch), dev.accz);
-    //tamamlayacı filter
-    double test = 1 * (euler->roll + gyro_roll*dt);
-    double test2 = (rad_to_deg(omega_roll) * 1);
-    //ESP_LOGW("roll","%d", (int16_t)test);
-    //ESP_LOGW("rollacc","%d", (int16_t)test2);
-    euler->roll = 0.93 * (euler->roll + gyro_roll*dt) + (rad_to_deg(omega_roll) * 0.07);
-    euler->pitch = 0.93 * (euler->pitch + gyro_pitch*dt) + (rad_to_deg(omega_pitch) * 0.07);
+    float rad_roll = atan2(acc_y, acc_z);
+    float rad_pitch = atan2(-acc_x, sqrt(acc_y * acc_y + acc_z * acc_z));
+    float acc_roll = rad_to_deg(rad_roll);
+    float acc_pitch = rad_to_deg(rad_pitch);
+
+    euler->roll = 1 *  (euler->roll + gyro_roll*dt) + 0.0 * acc_roll;
+    euler->pitch = 1 *  (euler->pitch + gyro_pitch*dt) + 0.0 * acc_pitch;*/
+
+    // euler->pitch = euler->pitch + gyro_pitch * dt;
+    // imu_filter(acc_roll,acc_pitch, acc_yaw, deg_to_rad(gyro_roll), deg_to_rad(gyro_pitch), deg_to_rad(gyro_yaw));
+    // eulerAngles(q_est, &euler->roll, &euler->pitch, &euler->yaw);
 
     return ESP_OK;
 }
+/*
+I (1719) offset acc: x=0 y=0 z=0
+I (1719) offset gyro: x=30 y=85 z=38
+I (1819) FOC RDY: 0
+I (2019) FOC RDY: 0
+I (2119) FOC RDY: 8
+I (2119) gyro-acc en: 0
+I (2119) gyro-acc en: 192
+I (2219) offset acc: x=127 y=127 z=9
+I (2219) offset gyro: x=248 y=255 z=246
+
+I (1719) offset acc: x=229 y=16 z=8
+I (1719) offset gyro: x=30 y=85 z=38
+I (1819) offset acc: x=229 y=16 z=8
+I (1819) offset gyro: x=30 y=85 z=38*/
