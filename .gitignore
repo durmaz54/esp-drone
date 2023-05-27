@@ -1,3 +1,6 @@
-.vscode/
+#vscode build ve __py__cache klasörlerini ignore etmek için
+
 build/
 __pycache__/
+.vscode/
+dz-drone-f4/
